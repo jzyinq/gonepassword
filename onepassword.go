@@ -10,7 +10,7 @@ import (
 
 // OnePassword is a wrapper around the 1Password CLI.
 type OnePassword struct {
-	executor commandExecutor
+	executor CommandExecutor
 	OPStorage
 	isInstalled bool
 }
@@ -22,9 +22,9 @@ const retryAttempts = 5
 
 // New1Password creates a new OnePassword instance.
 // serviceAccountToken can be passed directly to constructor, or it will be read from environment variable.
-func New1Password(executor commandExecutor, serviceAccountToken string) (*OnePassword, error) {
+func New1Password(executor CommandExecutor, serviceAccountToken string) (*OnePassword, error) {
 	if executor == nil {
-		executor = defaultCommandExecutor{serviceAccountToken}
+		executor = DefaultCommandExecutor{serviceAccountToken}
 	}
 	opCli := &OnePassword{executor: executor, OPStorage: newOPStorage()}
 	opCli.isInstalled = opCli.executor.IsInstalled()

@@ -9,16 +9,19 @@ import (
 	"strings"
 )
 
-type commandExecutor interface {
+// CommandExecutor is an interface for executing commands through op CLI.
+type CommandExecutor interface {
 	IsInstalled() bool
 	Execute(arg ...string) ([]byte, error)
 }
 
-type defaultCommandExecutor struct {
+// DefaultCommandExecutor is the default implementation of CommandExecutor.
+type DefaultCommandExecutor struct {
 	serviceAccountToken string
 }
 
-func (e defaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
+// Execute executes the given command and returns its output.
+func (e DefaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
 	output, err := retry(retryAttempts, exponentialBackoff, func() (any, error) {
 		var stdErr bytes.Buffer
 		executor := exec.Command(binName, arg...)
@@ -43,7 +46,7 @@ func (e defaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
 }
 
 // IsInstalled returns true if the 1Password CLI is installed.
-func (e defaultCommandExecutor) IsInstalled() bool {
+func (e DefaultCommandExecutor) IsInstalled() bool {
 	_, err := exec.LookPath(binName)
 	return err == nil
 }
