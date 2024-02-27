@@ -2,10 +2,12 @@
 
 This project provides a wrapper around
 the [1Password](https://1password.com) [CLI client](https://developer.1password.com/docs/cli/) to fetch secrets from
-1password vaults. Unlike official
-[connect-sdk-go](https://github.com/1Password/connect-sdk-go) it utilize 1password cli client either through
-[1password native app](https://1password.com/downloads/) or by
-passing [SERVICE_ACCOUNT_TOKEN](https://developer.1password.com/docs/service-accounts/use-with-1password-cli).
+1password vaults.
+
+Unlike official [connect-sdk-go](https://github.com/1Password/connect-sdk-go) it utilize 1password cli client either
+through
+[1password native app](https://1password.com/downloads/)
+or `SERVICE_ACCOUNT_TOKEN` ([source](https://developer.1password.com/docs/service-accounts/use-with-1password-cli).))
 
 ## Getting Started
 
