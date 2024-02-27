@@ -143,19 +143,17 @@ func parseOpURI(uri string) (string, string, string, error) {
 // It also caches whole uri item in memory to avoid multiple calls to 1Password CLI
 // while fetching other fields from the same item.
 func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
-	logrus.Info("Resolving 1password entry: ", uri)
 	if !strings.HasPrefix(uri, opURIPrefix) {
-		return uri, fmt.Errorf("incorrect op uri - it should look like op://vault/item/field")
+		return uri, &InvalidOpURIError{uri: uri}
 	}
+	logrus.Info("Resolving 1password entry: ", uri)
 	vault, item, field, err := parseOpURI(uri)
 	if err != nil {
 		return "", err
 	}
 	if !cli.isInstalled {
-		opNotInstalledError := "1Password CLI is not installed, visit " +
-			"https://developer.1password.com/docs/cli/get-started/#step-1-install-1password-cli"
-		logrus.Error(opNotInstalledError)
-		return "", fmt.Errorf(opNotInstalledError)
+		logrus.Error(&OnePasswordCliNotInstalledError{})
+		return "", &OnePasswordCliNotInstalledError{}
 	}
 	vaultItem, err := cli.OPStorage.getVaultItem(vault, item)
 	if err != nil {
