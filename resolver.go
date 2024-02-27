@@ -104,7 +104,7 @@ func (e defaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
 		_, _ = os.Stderr.Write(stdErr.Bytes())
 		if err != nil {
 			if strings.Contains(stdErr.String(), "https://") {
-				logrus.Error(os.Stderr, "it looks like 1password-1problem, let's ask them again...\n")
+				logrus.Error("it looks like 1password-1problem, let's ask them again...\n")
 				return output, fmt.Errorf(stdErr.String())
 			}
 			return output, &nonRetryableError{stdErr.String()}
