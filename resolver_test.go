@@ -57,14 +57,15 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			name:     "should return error when op binary is not present",
 			executor: &SpyCommandExecutor{IsCliInstalled: false},
 			uri:      "op://vault/item/field",
-			expectedError: "1Password CLI is not installed, visit " +
-				"https://developer.1password.com/docs/cli/get-started/#step-1-install-1password-cli",
+			expectedError: "1Password CLI is not installed, visit https://support.1password.com/command-line/ " +
+				"for installation instructions",
 		},
 		{
-			name:           "should return value when it's not an op uri and op binary is not present",
+			name:           "should return error when it's not an op uri and op binary is not present",
 			executor:       &SpyCommandExecutor{IsCliInstalled: false},
 			uri:            "regular-value",
-			expectedOutput: "regular-value",
+			expectedOutput: "",
+			expectedError:  "incorrect op uri - it should look like op://vault/item/field - got regular-value",
 		},
 		{
 			name:          "should return error when op command fails",
