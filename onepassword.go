@@ -8,10 +8,14 @@ import (
 	"strings"
 )
 
+type OnePasswordClient interface {
+	ResolveOpURI(uri string) (string, error)
+}
+
 // OnePassword is a wrapper around the 1Password CLI.
 type OnePassword struct {
 	executor CommandExecutor
-	OPStorage
+	opStorage
 	isInstalled bool
 }
 
@@ -26,7 +30,7 @@ func New1Password(executor CommandExecutor, serviceAccountToken string) (*OnePas
 	if executor == nil {
 		executor = DefaultCommandExecutor{serviceAccountToken}
 	}
-	opCli := &OnePassword{executor: executor, OPStorage: newOPStorage()}
+	opCli := &OnePassword{executor: executor, opStorage: newOPStorage()}
 	opCli.isInstalled = opCli.executor.IsInstalled()
 	return opCli, nil
 }
@@ -56,7 +60,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		logrus.Error(&OnePasswordCliNotInstalledError{})
 		return "", &OnePasswordCliNotInstalledError{}
 	}
-	vaultItem, err := cli.OPStorage.getVaultItem(vault, item)
+	vaultItem, err := cli.opStorage.getVaultItem(vault, item)
 	if err != nil {
 		output, err := cli.executor.Execute("item", "get", "--format", "json", item, "--vault", vault)
 		if err != nil {
@@ -67,7 +71,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		cli.OPStorage.setVaultItem(vault, item, opItem)
+		cli.opStorage.setVaultItem(vault, item, opItem)
 		vaultItem = opItem
 	}
 	fieldValue, err := vaultItem.GetField(field)

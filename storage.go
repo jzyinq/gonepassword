@@ -2,17 +2,17 @@ package gonepassword
 
 import "fmt"
 
-// OPStorage is a struct that holds the data returned by the 1Password CLI.
-type OPStorage struct {
+// opStorage is a struct that holds the data returned by the 1Password CLI.
+type opStorage struct {
 	Vaults map[string]opVault
 }
 
-func newOPStorage() OPStorage {
-	return OPStorage{Vaults: make(map[string]opVault)}
+func newOPStorage() opStorage {
+	return opStorage{Vaults: make(map[string]opVault)}
 }
 
 // setVaultItem sets the given item in the given vault.
-func (o OPStorage) setVaultItem(vault string, itemRef string, item opItem) {
+func (o opStorage) setVaultItem(vault string, itemRef string, item opItem) {
 	if _, ok := o.Vaults[vault]; !ok {
 		o.Vaults[vault] = opVault{ID: vault, Items: make(map[string]opItem)}
 	}
@@ -20,7 +20,7 @@ func (o OPStorage) setVaultItem(vault string, itemRef string, item opItem) {
 }
 
 // getVaultItem returns the given item from the given vault, return an error if the item or vault does not exist.
-func (o OPStorage) getVaultItem(vault string, item string) (opItem, error) {
+func (o opStorage) getVaultItem(vault string, item string) (opItem, error) {
 	if _, ok := o.Vaults[vault]; !ok {
 		return opItem{}, fmt.Errorf("no such vault %s", vault)
 	}
