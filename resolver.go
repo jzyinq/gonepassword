@@ -86,12 +86,19 @@ type commandExecutor interface {
 	Execute(arg ...string) ([]byte, error)
 }
 
-type defaultCommandExecutor struct{}
+type defaultCommandExecutor struct {
+	serviceAccountToken string
+}
 
 func (e defaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
 	output, err := retry(retryAttempts, exponentialBackoff, func() (any, error) {
 		var stdErr bytes.Buffer
 		executor := exec.Command(binName, arg...)
+		if e.serviceAccountToken != "" {
+			executor.Env = append(
+				os.Environ(), fmt.Sprintf("%s=%s", serviceAccountTokenEnv, e.serviceAccountToken),
+			)
+		}
 		executor.Stderr = &stdErr
 		output, err := executor.Output()
 		_, _ = os.Stderr.Write(stdErr.Bytes())
@@ -114,9 +121,9 @@ func (e defaultCommandExecutor) IsInstalled() bool {
 }
 
 // New1Password creates a new OnePassword instance.
-func New1Password(executor commandExecutor) (*OnePassword, error) {
+func New1Password(executor commandExecutor, serviceAccountToken string) (*OnePassword, error) {
 	if executor == nil {
-		executor = defaultCommandExecutor{}
+		executor = defaultCommandExecutor{serviceAccountToken}
 	}
 	opCli := &OnePassword{executor: executor, OPStorage: newOPStorage()}
 	opCli.isInstalled = opCli.executor.IsInstalled()
