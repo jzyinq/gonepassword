@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// OnePasswordClient is an interface for fetching secrets from 1Password.
 type OnePasswordClient interface {
 	ResolveOpURI(uri string) (string, error)
 }
