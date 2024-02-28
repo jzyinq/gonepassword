@@ -61,16 +61,6 @@ To run the tests, use the following command:
 make tests
 ```
 
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull
-requests to us.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-- Thanks to the Go community for the great language and tools.
-- Thanks to 1Password for the CLI tool.
