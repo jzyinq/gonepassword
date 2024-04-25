@@ -38,6 +38,7 @@ type opVault struct {
 type opItem struct {
 	ID     string    `json:"id"`
 	Fields []opField `json:"fields"`
+	Files  []opFile  `json:"files"`
 }
 
 type opField struct {
@@ -48,14 +49,28 @@ type opField struct {
 	Reference string `json:"reference"`
 }
 
+type opFile struct {
+	Id      string `json:"id"`
+	Name    string `json:"name"`
+	Section struct {
+		Id string `json:"id"`
+	} `json:"section"`
+}
+
 // GetField returns the value of the given field, returns an error if the field does not exist.
-func (o opItem) GetField(uri *OpURI) (string, error) {
+func (o opItem) GetField(cli *OnePassword, uri *OpURI) (string, error) {
 	for _, f := range o.Fields {
-		if f.ID == uri.field {
+		if f.ID == uri.field || f.Label == uri.field {
 			return f.Value, nil
 		}
-		if f.Label == uri.field {
-			return f.Value, nil
+	}
+	for _, f := range o.Files {
+		if f.Name == uri.field {
+			output, err := cli.executor.Execute("read", uri.raw)
+			if err != nil {
+				return "", err
+			}
+			return string(output), nil
 		}
 	}
 	return "", fmt.Errorf("field %s not found", uri.field)

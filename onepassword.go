@@ -90,7 +90,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		cli.opStorage.setVaultItem(opURI.vault, opURI.item, opItem)
 		vaultItem = opItem
 	}
-	fieldValue, err := vaultItem.GetField(opURI)
+	fieldValue, err := vaultItem.GetField(cli, opURI)
 	if err != nil {
 		return "", err
 	}
