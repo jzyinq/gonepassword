@@ -54,10 +54,11 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			expectedError: "invalid 1Password URI format - expected op://vault/item/field - got 'op://vault/item'",
 		},
 		{
-			name:          "should return error when uri is too long",
-			executor:      &SpyCommandExecutor{IsCliInstalled: true},
-			uri:           "op://vault/item/section/field/extra",
-			expectedError: "invalid 1Password URI format - expected op://vault/item/field - got 'op://vault/item'",
+			name:     "should return error when uri is too long",
+			executor: &SpyCommandExecutor{IsCliInstalled: true},
+			uri:      "op://vault/item/section/field/extra",
+			expectedError: "invalid 1Password URI format - expected op://vault/item/field - " +
+				"got 'op://vault/item/section/field/extra'",
 		},
 		{
 			name:     "should return error when op binary is not present",

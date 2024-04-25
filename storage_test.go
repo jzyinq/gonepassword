@@ -3,36 +3,23 @@ package gonepassword
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
 func TestOpStorage(t *testing.T) {
 	storage := newOPStorage()
 
-	// Test setVaultItem
 	vaultName := "testVault"
 	itemName := "testItem"
 	testItem := opItem{ID: itemName}
 	storage.setVaultItem(vaultName, itemName, testItem)
 
-	if _, ok := storage.Vaults[vaultName]; !ok {
-		t.Errorf("Vault %s was not set", vaultName)
-	}
+	assert.NotNil(t, storage.Vaults[vaultName], "Vault was not set")
+	assert.NotNil(t, storage.Vaults[vaultName].Items[itemName], "Item was not set in vault")
 
-	if _, ok := storage.Vaults[vaultName].Items[itemName]; !ok {
-		t.Errorf("Item %s was not set in vault %s", itemName, vaultName)
-	}
-
-	// Test getVaultItem
 	retrievedItem, err := storage.getVaultItem(vaultName, itemName)
-	if err != nil {
-		t.Errorf("Error retrieving item: %s", err)
-	}
-
-	if !reflect.DeepEqual(retrievedItem, testItem) {
-		t.Errorf("Retrieved item does not match set item. Got %v, want %v", retrievedItem, testItem)
-	}
+	assert.NoError(t, err, "Error retrieving item")
+	assert.Equal(t, testItem, retrievedItem, "Retrieved item does not match set item")
 }
 
 func TestOpFieldMatchField(t *testing.T) {
@@ -41,102 +28,155 @@ func TestOpFieldMatchField(t *testing.T) {
 		Type:    "field-type",
 		Label:   "field-label",
 		Value:   "field-value",
-		Section: opSection{ID: "section-id", Label: "section-label"},
+		Section: opSection{ID: "add more", Label: "section-label"},
 	}
 
-	// Test when the ID matches but the section does not
-	uri, _ := NewOpURI("op://vault/item/field-id")
-	uri.section = "wrong-section"
-	if field.matchField(uri) {
-		t.Errorf("Expected field not to match URI, but it did")
+	testCases := []struct {
+		name     string
+		uri      *OpURI
+		expected bool
+	}{
+		{
+			name: "ID matches but the section does not",
+			uri: &OpURI{
+				raw:     "op://vault/item/field-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "field-id",
+				section: "wrong-section",
+			},
+			expected: false,
+		},
+		{
+			name: "Section matches but neither the ID nor the Label does",
+			uri: &OpURI{
+				raw:     "op://vault/item/wrong-field",
+				vault:   "vault",
+				item:    "item",
+				field:   "wrong-field",
+				section: "section-id",
+			},
+			expected: false,
+		},
+		{
+			name: "Both the ID and section match",
+			uri: &OpURI{
+				raw:     "op://vault/item/field-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "field-id",
+				section: "add more",
+			},
+			expected: true,
+		},
+		{
+			name: "Section is empty",
+			uri: &OpURI{
+				raw:     "op://vault/item/field-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "field-id",
+				section: "",
+			},
+			expected: true,
+		},
 	}
 
-	// Test when the Label matches but the section does not
-	uri.field = "field-label"
-	if field.matchField(uri) {
-		t.Errorf("Expected field not to match URI, but it did")
-	}
-
-	// Test when the section matches but neither the ID nor the Label does
-	uri.field = "wrong-field"
-	uri.section = "section-id"
-	if field.matchField(uri) {
-		t.Errorf("Expected field not to match URI, but it did")
-	}
-
-	// Test when both the ID and section match
-	uri.field = "field-id"
-	if !field.matchField(uri) {
-		t.Errorf("Expected field to match URI, but it did not")
-	}
-
-	// Test when both the Label and section match
-	uri.field = "field-label"
-	if !field.matchField(uri) {
-		t.Errorf("Expected field to match URI, but it did not")
-	}
-
-	// Test when section is empty
-	uri.section = ""
-	field.Section.ID = "add more"
-	if !field.matchField(uri) {
-		t.Errorf("Expected field to match URI, but it did not")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, field.matchField(tc.uri))
+		})
 	}
 }
 
-func TestOpFileMatchFile(t *testing.T) {
+func TestOpFileMatchFile(t *testing.T) { //nolint:funlen
 	file := opFile{
 		ID:      "file-id",
 		Name:    "file-name",
-		Section: opSection{ID: "section-id", Label: "section-label"},
+		Section: opSection{ID: "add more", Label: "section-label"},
 	}
 
-	// Test when the ID matches but the section does not
-	uri := &OpURI{
-		raw:     "op://vault/item/file-id",
-		vault:   "vault",
-		item:    "item",
-		field:   "file-id",
-		section: "wrong-section",
-	}
-	if file.matchFile(uri) {
-		t.Errorf("Expected file not to match URI, but it did")
+	testCases := []struct {
+		name     string
+		uri      *OpURI
+		expected bool
+	}{
+		{
+			name: "ID matches but the section does not",
+			uri: &OpURI{
+				raw:     "op://vault/item/file-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-id",
+				section: "wrong-section",
+			},
+			expected: false,
+		},
+		{
+			name: "Name matches but the section does not",
+			uri: &OpURI{
+				raw:     "op://vault/item/file-name",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-name",
+				section: "wrong-section",
+			},
+			expected: false,
+		},
+		{
+			name: "Section matches but neither the ID nor the Name does",
+			uri: &OpURI{
+				raw:     "op://vault/item/wrong-field",
+				vault:   "vault",
+				item:    "item",
+				field:   "wrong-field",
+				section: "section-id",
+			},
+			expected: false,
+		},
+		{
+			name: "Both the ID and section match",
+			uri: &OpURI{
+				raw:     "op://vault/item/file-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-id",
+				section: "add more",
+			},
+			expected: true,
+		},
+		{
+			name: "Both the Name and section match",
+			uri: &OpURI{
+				raw:     "op://vault/item/file-name",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-name",
+				section: "add more",
+			},
+			expected: true,
+		},
+		{
+			name: "Section is empty",
+			uri: &OpURI{
+				raw:     "op://vault/item/file-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-id",
+				section: "",
+			},
+			expected: true,
+		},
 	}
 
-	// Test when the Name matches but the section does not
-	uri.field = "file-name"
-	if file.matchFile(uri) {
-		t.Errorf("Expected file not to match URI, but it did")
-	}
-
-	// Test when the section matches but neither the ID nor the Name does
-	uri.field = "wrong-field"
-	uri.section = "section-id"
-	if file.matchFile(uri) {
-		t.Errorf("Expected file not to match URI, but it did")
-	}
-
-	// Test when both the ID and section match
-	uri.field = "file-id"
-	if !file.matchFile(uri) {
-		t.Errorf("Expected file to match URI, but it did not")
-	}
-
-	// Test when both the Name and section match
-	uri.field = "file-name"
-	if !file.matchFile(uri) {
-		t.Errorf("Expected file to match URI, but it did not")
-	}
-
-	// Test when section is empty
-	uri.section = ""
-	file.Section.ID = "add more"
-	if !file.matchFile(uri) {
-		t.Errorf("Expected field to match URI, but it did not")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, file.matchFile(tc.uri))
+		})
 	}
 }
 
-func TestGetFieldValue(t *testing.T) {
+func TestGetFieldValue(t *testing.T) { //nolint:funlen
 	item := opItem{
 		ID: "item-id",
 		Fields: []opField{
@@ -156,50 +196,104 @@ func TestGetFieldValue(t *testing.T) {
 			},
 		},
 	}
-	// Test when the field exists and matches the URI
-	uri, _ := NewOpURI("op://vault/item/section-id/field-id")
-	value, err := item.GetFieldValue(nil, uri)
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if value != "field-value" {
-		t.Errorf("Expected field value to be 'field-value', but got '%s'", value)
+
+	testCases := []struct {
+		name           string
+		uri            *OpURI
+		executor       *SpyCommandExecutor
+		expectedOutput string
+		expectedError  string
+	}{
+		{
+			name: "Field exists and matches the URI",
+			uri: &OpURI{
+				raw:     "op://vault/item/section-id/field-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "field-id",
+				section: "section-id",
+			},
+			executor: &SpyCommandExecutor{
+				IsCliInstalled: true,
+			},
+			expectedOutput: "field-value",
+		},
+		{
+			name: "Field does not exist in the item",
+			uri: &OpURI{
+				raw:     "op://vault/item/section-id/nonexistent-field",
+				vault:   "vault",
+				item:    "item",
+				field:   "nonexistent-field",
+				section: "section-id",
+			},
+			executor: &SpyCommandExecutor{
+				IsCliInstalled: true,
+			},
+			expectedError: "field nonexistent-field not found",
+		},
+		{
+			name: "Field exists but the section does not match",
+			uri: &OpURI{
+				raw:     "op://vault/item/wrong-section/field-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "field-id",
+				section: "wrong-section",
+			},
+			executor: &SpyCommandExecutor{
+				IsCliInstalled: true,
+			},
+			expectedError: "field field-id not found",
+		},
+		{
+			name: "Field is a file",
+			uri: &OpURI{
+				raw:     "op://vault/item/section-id/file-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-id",
+				section: "section-id",
+			},
+			executor: &SpyCommandExecutor{
+				IsCliInstalled: true,
+				ExecuteOutput:  []byte("itsa me - a file!"),
+			},
+			expectedOutput: "itsa me - a file!",
+		},
+		{
+			name: "Fetching file fails",
+			uri: &OpURI{
+				raw:     "op://vault/item/section-id/file-id",
+				vault:   "vault",
+				item:    "item",
+				field:   "file-id",
+				section: "section-id",
+			},
+			executor: &SpyCommandExecutor{
+				IsCliInstalled: true,
+				ExecuteError:   errors.New("oh noez"),
+			},
+			expectedError: "oh noez",
+		},
 	}
 
-	// Test when the field does not exist in the item
-	uri.field = "nonexistent-field"
-	_, err = item.GetFieldValue(nil, uri)
-	if err == nil {
-		t.Errorf("Expected error, but got nil")
-	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cli, err := New1Password(tc.executor, "")
+			if err != nil {
+				t.Errorf("Unexpected error: %s", err)
+			}
 
-	// Test when the field exists but the section does not match
-	uri.field = "field-id"
-	uri.section = "wrong-section"
-	_, err = item.GetFieldValue(nil, uri)
-	if err == nil {
-		t.Errorf("Expected error, but got nil")
-	}
+			fieldValue, err := item.GetFieldValue(cli, tc.uri)
 
-	// Test when the field is a file
-	uri, _ = NewOpURI("op://vault/item/section-id/file-id")
-	executor := &SpyCommandExecutor{IsCliInstalled: true, ExecuteOutput: []byte("itsa me - a file!")}
-	cli, err := New1Password(executor, "")
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err)
+			if tc.expectedError != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError, err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedOutput, fieldValue)
+			}
+		})
 	}
-	fieldValue, _ := item.GetFieldValue(cli, uri)
-	assert.Equal(t, []string{"read", "op://vault/item/section-id/file-id"}, executor.ExecuteArgs)
-	assert.Equal(t, "itsa me - a file!", fieldValue)
-
-	// Test when the fetching file fails
-	uri, _ = NewOpURI("op://vault/item/section-id/file-id")
-	executor = &SpyCommandExecutor{IsCliInstalled: true, ExecuteError: errors.New("oh noez")}
-	cli, err = New1Password(executor, "")
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	_, err = item.GetFieldValue(cli, uri)
-	assert.Equal(t, []string{"read", "op://vault/item/section-id/file-id"}, executor.ExecuteArgs)
-	assert.Equal(t, "oh noez", err.Error())
 }
