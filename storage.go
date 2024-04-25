@@ -69,7 +69,6 @@ type opSection struct {
 }
 
 func (os opSection) matchSection(section string) bool {
-	fmt.Printf("Comparing '%s' and '%s' with '%s'\n", os.ID, os.Label, section)
 	return os.ID == section || os.Label == section ||
 		(os.ID == "add more" && section == "") // default section is `add more` in 1password :kek:
 }
