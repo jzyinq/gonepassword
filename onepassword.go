@@ -20,6 +20,30 @@ type OnePassword struct {
 	isInstalled bool
 }
 
+type OpURI struct {
+	vault   string
+	item    string
+	field   string
+	section string
+	//query   string // FIXME do we need query support ?
+	raw string
+}
+
+func NewOpURI(uri string) (*OpURI, error) {
+	parts := strings.Split(strings.TrimPrefix(uri, opURIPrefix), "/")
+	numParts := len(parts)
+	var opURI OpURI
+	if numParts < 3 || numParts > 4 {
+		return nil, fmt.Errorf("invalid 1Password URI format - expected op://vault/item/field - got '%s'", uri)
+	}
+	opURI = OpURI{raw: uri, vault: parts[0], item: parts[1], field: parts[2]}
+	if numParts == 4 {
+		opURI.section = parts[2]
+		opURI.field = parts[3]
+	}
+	return &opURI, nil
+}
+
 const binName string = "op"
 const opURIPrefix string = "op://"
 const serviceAccountTokenEnv = "OP_SERVICE_ACCOUNT_TOKEN" //nolint
@@ -36,15 +60,6 @@ func New1Password(executor CommandExecutor, serviceAccountToken string) (*OnePas
 	return opCli, nil
 }
 
-// parseOpURI parses the given 1Password URI and returns its components.
-func parseOpURI(uri string) (string, string, string, error) {
-	parts := strings.Split(strings.TrimPrefix(uri, opURIPrefix), "/")
-	if len(parts) != 3 {
-		return "", "", "", fmt.Errorf("invalid 1Password URI format - expected op://vault/item/field - got '%s'", uri)
-	}
-	return parts[0], parts[1], parts[2], nil
-}
-
 // ResolveOpURI resolves the given 1Password URI and returns its value.
 // It also caches whole uri item in memory to avoid multiple calls to 1Password CLI
 // while fetching other fields from the same item.
@@ -53,7 +68,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		return uri, &InvalidOpURIError{uri: uri}
 	}
 	logrus.Info("Resolving 1password entry: ", uri)
-	vault, item, field, err := parseOpURI(uri)
+	opURI, err := NewOpURI(uri)
 	if err != nil {
 		return "", err
 	}
@@ -61,9 +76,9 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		logrus.Error(&OnePasswordCliNotInstalledError{})
 		return "", &OnePasswordCliNotInstalledError{}
 	}
-	vaultItem, err := cli.opStorage.getVaultItem(vault, item)
+	vaultItem, err := cli.opStorage.getVaultItem(opURI.vault, opURI.item)
 	if err != nil {
-		output, err := cli.executor.Execute("item", "get", "--format", "json", item, "--vault", vault)
+		output, err := cli.executor.Execute("item", "get", "--format", "json", opURI.item, "--vault", opURI.vault)
 		if err != nil {
 			return "", err
 		}
@@ -72,10 +87,10 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		cli.opStorage.setVaultItem(vault, item, opItem)
+		cli.opStorage.setVaultItem(opURI.vault, opURI.item, opItem)
 		vaultItem = opItem
 	}
-	fieldValue, err := vaultItem.GetField(field)
+	fieldValue, err := vaultItem.GetField(opURI)
 	if err != nil {
 		return "", err
 	}

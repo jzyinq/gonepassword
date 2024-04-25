@@ -49,14 +49,14 @@ type opField struct {
 }
 
 // GetField returns the value of the given field, returns an error if the field does not exist.
-func (o opItem) GetField(field string) (string, error) {
+func (o opItem) GetField(uri *OpURI) (string, error) {
 	for _, f := range o.Fields {
-		if f.ID == field {
+		if f.ID == uri.field {
 			return f.Value, nil
 		}
-		if f.Label == field {
+		if f.Label == uri.field {
 			return f.Value, nil
 		}
 	}
-	return "", fmt.Errorf("field %s not found", field)
+	return "", fmt.Errorf("field %s not found", uri.field)
 }
