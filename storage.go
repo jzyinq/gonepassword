@@ -64,12 +64,14 @@ func (of opFile) matchFile(uri *OpURI) bool {
 }
 
 type opSection struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	Label string `json:"label"`
 }
 
 func (os opSection) matchSection(section string) bool {
-	return os.Id == section || os.Label == section
+	fmt.Printf("Comparing '%s' and '%s' with '%s'\n", os.ID, os.Label, section)
+	return os.ID == section || os.Label == section ||
+		(os.ID == "add more" && section == "") // default section is `add more` in 1password :kek:
 }
 
 // GetFieldValue returns the value of the given field, returns an error if the field does not exist.

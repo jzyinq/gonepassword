@@ -20,15 +20,17 @@ type OnePassword struct {
 	isInstalled bool
 }
 
+// OpURI is a struct that holds the parsed 1Password URI.
 type OpURI struct {
 	vault   string
 	item    string
 	field   string
 	section string
-	//query   string // FIXME do we need query support ?
+	//query   string // TODO query support some day
 	raw string
 }
 
+// NewOpURI creates a new OpURI instance.
 func NewOpURI(uri string) (*OpURI, error) {
 	parts := strings.Split(strings.TrimPrefix(uri, opURIPrefix), "/")
 	numParts := len(parts)
