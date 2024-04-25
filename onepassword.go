@@ -36,7 +36,7 @@ func NewOpURI(uri string) (*OpURI, error) {
 	if numParts < 3 || numParts > 4 {
 		return nil, fmt.Errorf("invalid 1Password URI format - expected op://vault/item/field - got '%s'", uri)
 	}
-	opURI = OpURI{raw: uri, vault: parts[0], item: parts[1], field: parts[2]}
+	opURI = OpURI{raw: uri, vault: parts[0], item: parts[1], field: parts[2], section: ""}
 	if numParts == 4 {
 		opURI.section = parts[2]
 		opURI.field = parts[3]
@@ -90,7 +90,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		cli.opStorage.setVaultItem(opURI.vault, opURI.item, opItem)
 		vaultItem = opItem
 	}
-	fieldValue, err := vaultItem.GetField(cli, opURI)
+	fieldValue, err := vaultItem.GetFieldValue(cli, opURI)
 	if err != nil {
 		return "", err
 	}

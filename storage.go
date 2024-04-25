@@ -42,30 +42,45 @@ type opItem struct {
 }
 
 type opField struct {
-	ID        string `json:"id"`
-	Type      string `json:"type"`
-	Label     string `json:"label"`
-	Value     string `json:"value"`
-	Reference string `json:"reference"`
+	ID      string    `json:"id"`
+	Type    string    `json:"type"`
+	Label   string    `json:"label"`
+	Value   string    `json:"value"`
+	Section opSection `json:"section"`
+}
+
+func (of opField) matchField(uri *OpURI) bool {
+	return (of.ID == uri.field || of.Label == uri.field) && of.Section.matchSection(uri.section)
 }
 
 type opFile struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	Section struct {
-		Id string `json:"id"`
-	} `json:"section"`
+	ID      string    `json:"id"`
+	Name    string    `json:"name"`
+	Section opSection `json:"section"`
 }
 
-// GetField returns the value of the given field, returns an error if the field does not exist.
-func (o opItem) GetField(cli *OnePassword, uri *OpURI) (string, error) {
+func (of opFile) matchFile(uri *OpURI) bool {
+	return (of.Name == uri.field || of.ID == uri.field) && of.Section.matchSection(uri.section)
+}
+
+type opSection struct {
+	Id    string `json:"id"`
+	Label string `json:"label"`
+}
+
+func (os opSection) matchSection(section string) bool {
+	return os.Id == section || os.Label == section
+}
+
+// GetFieldValue returns the value of the given field, returns an error if the field does not exist.
+func (o opItem) GetFieldValue(cli *OnePassword, uri *OpURI) (string, error) {
 	for _, f := range o.Fields {
-		if f.ID == uri.field || f.Label == uri.field {
+		if f.matchField(uri) {
 			return f.Value, nil
 		}
 	}
 	for _, f := range o.Files {
-		if f.Name == uri.field {
+		if f.matchFile(uri) {
 			output, err := cli.executor.Execute("read", uri.raw)
 			if err != nil {
 				return "", err
