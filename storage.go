@@ -38,25 +38,56 @@ type opVault struct {
 type opItem struct {
 	ID     string    `json:"id"`
 	Fields []opField `json:"fields"`
+	Files  []opFile  `json:"files"`
 }
 
 type opField struct {
-	ID        string `json:"id"`
-	Type      string `json:"type"`
-	Label     string `json:"label"`
-	Value     string `json:"value"`
-	Reference string `json:"reference"`
+	ID      string    `json:"id"`
+	Type    string    `json:"type"`
+	Label   string    `json:"label"`
+	Value   string    `json:"value"`
+	Section opSection `json:"section"`
 }
 
-// GetField returns the value of the given field, returns an error if the field does not exist.
-func (o opItem) GetField(field string) (string, error) {
+func (of opField) matchField(uri *OpURI) bool {
+	return (of.ID == uri.field || of.Label == uri.field) && of.Section.matchSection(uri.section)
+}
+
+type opFile struct {
+	ID      string    `json:"id"`
+	Name    string    `json:"name"`
+	Section opSection `json:"section"`
+}
+
+func (of opFile) matchFile(uri *OpURI) bool {
+	return (of.Name == uri.field || of.ID == uri.field) && of.Section.matchSection(uri.section)
+}
+
+type opSection struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
+func (os opSection) matchSection(section string) bool {
+	return os.ID == section || os.Label == section ||
+		(os.ID == "add more" && section == "") // default section is `add more` in 1password :kek:
+}
+
+// GetFieldValue returns the value of the given field, returns an error if the field does not exist.
+func (o opItem) GetFieldValue(cli *OnePassword, uri *OpURI) (string, error) {
 	for _, f := range o.Fields {
-		if f.ID == field {
-			return f.Value, nil
-		}
-		if f.Label == field {
+		if f.matchField(uri) {
 			return f.Value, nil
 		}
 	}
-	return "", fmt.Errorf("field %s not found", field)
+	for _, f := range o.Files {
+		if f.matchFile(uri) {
+			output, err := cli.executor.Execute("read", uri.raw)
+			if err != nil {
+				return "", err
+			}
+			return string(output), nil
+		}
+	}
+	return "", fmt.Errorf("field %s not found", uri.field)
 }

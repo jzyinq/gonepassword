@@ -49,11 +49,18 @@ func TestResolveOpURI(t *testing.T) { //nolint
 		expectedArgs   []string
 	}{
 		{
-			name:          "should return error when uri is not valid",
+			name:          "should return error when uri is too short",
 			executor:      &SpyCommandExecutor{IsCliInstalled: true},
 			uri:           "op://vault/item",
 			options:       OnePasswordOptions{},
 			expectedError: "invalid 1Password URI format - expected op://vault/item/field - got 'op://vault/item'",
+		},
+		{
+			name:     "should return error when uri is too long",
+			executor: &SpyCommandExecutor{IsCliInstalled: true},
+			uri:      "op://vault/item/section/field/extra",
+			expectedError: "invalid 1Password URI format - expected op://vault/item/field - " +
+				"got 'op://vault/item/section/field/extra'",
 		},
 		{
 			name:     "should return error when op binary is not present",
@@ -199,6 +206,63 @@ func Test1PasswordStorage(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.executorCalls, executeCalls)
+		})
+	}
+}
+
+func TestNewOpURI(t *testing.T) {
+	testCases := []struct {
+		name          string
+		uri           string
+		expectedError string
+		expectedOpURI *OpURI
+	}{
+		{
+			name:          "should return error when uri is too short",
+			uri:           "op://vault/item",
+			expectedError: "invalid 1Password URI format - expected op://vault/item/field - got 'op://vault/item'",
+		},
+		{
+			name: "should return error when uri is too long",
+			uri:  "op://vault/item/section/field/extra",
+			expectedError: "invalid 1Password URI format - expected op://vault/item/field - " +
+				"got 'op://vault/item/section/field/extra'",
+		},
+		{
+			name: "should return valid OpURI when uri is valid with three parts",
+			uri:  "op://vault/item/field",
+			expectedOpURI: &OpURI{
+				raw:     "op://vault/item/field",
+				vault:   "vault",
+				item:    "item",
+				field:   "field",
+				section: "",
+			},
+		},
+		{
+			name: "should return valid OpURI when uri is valid with four parts",
+			uri:  "op://vault/item/section/field",
+			expectedOpURI: &OpURI{
+				raw:     "op://vault/item/section/field",
+				vault:   "vault",
+				item:    "item",
+				field:   "field",
+				section: "section",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := NewOpURI(tc.uri)
+
+			if tc.expectedError != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tc.expectedError, err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedOpURI, result)
+			}
 		})
 	}
 }
