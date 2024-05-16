@@ -42,6 +42,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 	testCases := []struct {
 		name           string
 		executor       *SpyCommandExecutor
+		options        OnePasswordOptions
 		uri            string
 		expectedError  string
 		expectedOutput string
@@ -51,6 +52,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			name:          "should return error when uri is too short",
 			executor:      &SpyCommandExecutor{IsCliInstalled: true},
 			uri:           "op://vault/item",
+			options:       OnePasswordOptions{},
 			expectedError: "invalid 1Password URI format - expected op://vault/item/field - got 'op://vault/item'",
 		},
 		{
@@ -64,6 +66,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			name:     "should return error when op binary is not present",
 			executor: &SpyCommandExecutor{IsCliInstalled: false},
 			uri:      "op://vault/item/field",
+			options:  OnePasswordOptions{},
 			expectedError: "1Password CLI is not installed, visit https://support.1password.com/command-line/ " +
 				"for installation instructions",
 		},
@@ -71,6 +74,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			name:           "should return error when it's not an op uri and op binary is not present",
 			executor:       &SpyCommandExecutor{IsCliInstalled: false},
 			uri:            "regular-value",
+			options:        OnePasswordOptions{},
 			expectedOutput: "",
 			expectedError:  "incorrect op uri - it should look like op://vault/item/field - got regular-value",
 		},
@@ -78,6 +82,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			name:          "should return error when op command fails",
 			executor:      &SpyCommandExecutor{IsCliInstalled: true, ExecuteError: errors.New("command failed")},
 			uri:           "op://vault/item/field",
+			options:       OnePasswordOptions{},
 			expectedError: "command failed",
 		},
 		{
@@ -86,6 +91,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 				IsCliInstalled: true,
 				ExecuteOutput:  opItemJSON,
 			},
+			options:        OnePasswordOptions{},
 			expectedArgs:   []string{"item", "get", "--format", "json", "item", "--vault", "vault"},
 			uri:            "op://vault/item/field-id",
 			expectedOutput: "resolved-value",
@@ -96,8 +102,20 @@ func TestResolveOpURI(t *testing.T) { //nolint
 				IsCliInstalled: true,
 				ExecuteOutput:  opItemJSON,
 			},
+			options:        OnePasswordOptions{},
 			expectedArgs:   []string{"item", "get", "--format", "json", "item", "--vault", "vault"},
 			uri:            "op://vault/item/field-label",
+			expectedOutput: "resolved-value",
+		},
+		{
+			name: "should use predefined account while resolving value by id",
+			executor: &SpyCommandExecutor{
+				IsCliInstalled: true,
+				ExecuteOutput:  opItemJSON,
+			},
+			options:        OnePasswordOptions{Account: "account"},
+			expectedArgs:   []string{"item", "get", "--format", "json", "item", "--vault", "vault", "--account", "account"},
+			uri:            "op://vault/item/field-id",
 			expectedOutput: "resolved-value",
 		},
 	}
@@ -108,7 +126,7 @@ func TestResolveOpURI(t *testing.T) { //nolint
 			var err error
 			var result string
 
-			if cli, err = New1Password(tc.executor, ""); err == nil {
+			if cli, err = New1Password(tc.executor, tc.options); err == nil {
 				result, err = cli.ResolveOpURI(tc.uri)
 			}
 
@@ -176,7 +194,7 @@ func Test1PasswordStorage(t *testing.T) {
 			var err error
 			executeCalls := 0
 
-			if cli, err = New1Password(tc.executor, ""); err == nil {
+			if cli, err = New1Password(tc.executor, OnePasswordOptions{}); err == nil {
 				for _, uri := range tc.uris {
 					_, err = cli.ResolveOpURI(uri)
 					if tc.executor.IsExecuteCalled {

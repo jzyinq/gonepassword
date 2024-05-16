@@ -280,7 +280,7 @@ func TestGetFieldValue(t *testing.T) { //nolint:funlen
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cli, err := New1Password(tc.executor, "")
+			cli, err := New1Password(tc.executor, OnePasswordOptions{})
 			if err != nil {
 				t.Errorf("Unexpected error: %s", err)
 			}
