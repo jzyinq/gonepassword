@@ -18,6 +18,15 @@ type OnePassword struct {
 	executor CommandExecutor
 	opStorage
 	isInstalled bool
+	options     OnePasswordOptions
+}
+
+// OnePasswordOptions is a struct that holds the options for the 1Password client.
+type OnePasswordOptions struct {
+	// ServiceAccountToken is the token used to authenticate with 1Password instead of an app
+	ServiceAccountToken string
+	// Account is the `--account` op cli argument to use when fetching secrets.
+	Account string
 }
 
 const binName string = "op"
@@ -27,11 +36,11 @@ const retryAttempts = 5
 
 // New1Password creates a new OnePassword instance.
 // serviceAccountToken can be passed directly to constructor, or it will be read from environment variable.
-func New1Password(executor CommandExecutor, serviceAccountToken string) (*OnePassword, error) {
+func New1Password(executor CommandExecutor, options OnePasswordOptions) (*OnePassword, error) {
 	if executor == nil {
-		executor = DefaultCommandExecutor{serviceAccountToken}
+		executor = DefaultCommandExecutor{options.ServiceAccountToken}
 	}
-	opCli := &OnePassword{executor: executor, opStorage: newOPStorage()}
+	opCli := &OnePassword{executor: executor, opStorage: newOPStorage(), options: options}
 	opCli.isInstalled = opCli.executor.IsInstalled()
 	return opCli, nil
 }
@@ -63,7 +72,11 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 	}
 	vaultItem, err := cli.opStorage.getVaultItem(vault, item)
 	if err != nil {
-		output, err := cli.executor.Execute("item", "get", "--format", "json", item, "--vault", vault)
+		executorCmd := []string{"item", "get", "--format", "json", item, "--vault", vault}
+		if cli.options.Account != "" {
+			executorCmd = append(executorCmd, "--account", cli.options.Account)
+		}
+		output, err := cli.executor.Execute(executorCmd...)
 		if err != nil {
 			return "", err
 		}
