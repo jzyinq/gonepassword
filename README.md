@@ -39,18 +39,29 @@ CLI is installed, executing commands, and resolving 1Password URIs.
 Here is a basic example of how to use it:
 
 ```go
-// Create a new 1Password client
-opCli, err := New1Password(nil, "")
-if err != nil {
-    log.Fatal(err)
-}
+package main
 
-uri := "op://vault/item/field"
-value, err := opCli.ResolveOpURI(uri)
-if err != nil {
-    log.Fatal(err)
+import (
+	"fmt"
+	"log"
+
+	"github.com/jzyinq/gonepassword"
+)
+
+func main() {
+	// Create a new 1Password client
+	opCli, err := gonepassword.New1Password(nil, gonepassword.OnePasswordOptions{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	uri := "op://vault/item/field"
+	value, err := opCli.ResolveOpURI(uri)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(value)
 }
-fmt.Println(value)
 ```
 
 ## Running the tests

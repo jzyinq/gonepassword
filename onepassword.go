@@ -23,8 +23,10 @@ type OnePassword struct {
 
 // OnePasswordOptions is a struct that holds the options for the 1Password client.
 type OnePasswordOptions struct {
+	// ServiceAccountToken is the token used to authenticate with 1Password instead of an app
 	ServiceAccountToken string
-	Account             string
+	// Account is the `--account` op cli argument to use when fetching secrets.
+	Account string
 }
 
 const binName string = "op"
