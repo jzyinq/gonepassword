@@ -2,6 +2,7 @@ package gonepassword
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -24,7 +25,7 @@ type DefaultCommandExecutor struct {
 func (e DefaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
 	output, err := retry(retryAttempts, exponentialBackoff, func() (any, error) {
 		var stdErr bytes.Buffer
-		executor := exec.Command(binName, arg...)
+		executor := exec.Command(binName, arg...) //nolint:gosec // wrapper intentionally shells out to the op CLI
 		if e.serviceAccountToken != "" {
 			executor.Env = append(
 				os.Environ(), fmt.Sprintf("%s=%s", serviceAccountTokenEnv, e.serviceAccountToken),
@@ -36,7 +37,7 @@ func (e DefaultCommandExecutor) Execute(arg ...string) ([]byte, error) {
 		if err != nil {
 			if strings.Contains(stdErr.String(), "https://") {
 				logrus.Error("it looks like 1password-1problem, let's ask them again...\n")
-				return output, fmt.Errorf(stdErr.String())
+				return output, errors.New(stdErr.String())
 			}
 			return output, &nonRetryableError{stdErr.String()}
 		}

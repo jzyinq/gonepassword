@@ -19,7 +19,7 @@ type retryAbleFunc func() (any, error)
 type backOffFunc func(attempt int) time.Duration
 
 func exponentialBackoff(attempt int) time.Duration {
-	return time.Duration(2<<uint(attempt)) * time.Second
+	return time.Duration(1<<(attempt+1)) * time.Second
 }
 
 func retry(retries int, backoff backOffFunc, f retryAbleFunc) (any, error) {

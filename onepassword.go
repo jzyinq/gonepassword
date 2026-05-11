@@ -87,7 +87,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		logrus.Error(&OnePasswordCliNotInstalledError{})
 		return "", &OnePasswordCliNotInstalledError{}
 	}
-	vaultItem, err := cli.opStorage.getVaultItem(opURI.vault, opURI.item)
+	vaultItem, err := cli.getVaultItem(opURI.vault, opURI.item)
 	if err != nil {
 		executorCmd := []string{"item", "get", "--format", "json", opURI.item, "--vault", opURI.vault}
 		if cli.options.Account != "" {
@@ -102,7 +102,7 @@ func (cli *OnePassword) ResolveOpURI(uri string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		cli.opStorage.setVaultItem(opURI.vault, opURI.item, opItem)
+		cli.setVaultItem(opURI.vault, opURI.item, opItem)
 		vaultItem = opItem
 	}
 	fieldValue, err := vaultItem.GetFieldValue(cli, opURI)

@@ -12,7 +12,7 @@ import (
 
 func MilliExponentialBackoff(attempt int) time.Duration {
 	// that will print 0 seconds in output but hey - it will be fast for tests
-	return time.Duration(2<<uint(attempt)) * time.Millisecond
+	return time.Duration(1<<(attempt+1)) * time.Millisecond
 }
 
 func TestRetry(t *testing.T) { //nolint
